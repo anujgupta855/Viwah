@@ -3,9 +3,7 @@ import { connectDB } from "@/lib/db";
 import { Vendor, Venue, WeddingStory } from "@/models";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = (
-    process.env.NEXT_PUBLIC_APP_URL || "https://viwah.in"
-  ).replace(/\/$/, "");
+const base = "https://viwah.in";
 
   try {
     await connectDB();
