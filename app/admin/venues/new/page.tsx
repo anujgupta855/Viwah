@@ -1,0 +1,1 @@
+import AdminShell,{PageHeader} from "../../../../components/admin/admin-shell";import VenueForm from "../../../../components/admin/venue-form";export default function NewVenue(){return <AdminShell><PageHeader title="Add venue" description="Create a new venue and publish it to the marketplace."/><VenueForm/></AdminShell>}

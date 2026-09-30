@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ivory: #FAF7F2;
+  --gold: #C8A45D;
+  --charcoal: #222222;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--ivory);
+  color: var(--charcoal);
+  font-family: var(--font-inter), sans-serif;
+}
+::selection { background: rgba(200,164,93,.28); color: #222; }
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .luxury-border { border-color: rgba(200,164,93,.35); }
+}
+
+@layer components { .field { @apply rounded-2xl border border-charcoal/10 bg-white px-4 py-3.5 text-sm outline-none transition placeholder:text-charcoal/35 focus:border-gold focus:ring-2 focus:ring-gold/10; } }

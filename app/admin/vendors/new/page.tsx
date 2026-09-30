@@ -1,0 +1,1 @@
+import AdminShell,{PageHeader} from "../../../../components/admin/admin-shell";import VendorForm from "../../../../components/admin/vendor-form";export default function NewVendor(){return <AdminShell><PageHeader title="Add vendor" description="Create a new professional and publish it to the marketplace."/><VendorForm/></AdminShell>}
