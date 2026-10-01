@@ -4,6 +4,15 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Card } from "./admin-shell";
 
+const categories = [
+  "Photographer",
+  "Makeup Artist",
+  "Decorator",
+  "Caterer",
+  "Mehendi Artist",
+  "DJ",
+];
+
 const cities = [
   "Delhi",
   "Mumbai",
@@ -16,31 +25,12 @@ const cities = [
   "Chandigarh",
 ];
 
-const types = [
-  "Banquet Hall",
-  "Wedding Lawn",
-  "Resort",
-  "Hotel",
-  "Farmhouse",
-  "Palace",
-];
-
-const amenities = [
-  "Air Conditioning",
-  "Parking",
-  "Catering",
-  "Power Backup",
-  "Bridal Room",
-  "DJ Setup",
-  "Decor Allowed",
-];
-
-type YoutubeVideo = {
-  title: string;
+type UploadImage = {
   url: string;
+  publicId?: string;
 };
 
-export default function VenueForm({
+export default function VendorForm({
   initial,
   id,
 }: {
@@ -51,24 +41,40 @@ export default function VenueForm({
 
   const [f, setF] = useState({
     name: initial?.name || "",
+    category: initial?.category || "Photographer",
     city: initial?.city || "Delhi",
-    location: initial?.location || "Mehrauli, New Delhi",
     description: initial?.description || "",
-    images: initial?.images || [],
-    startingPrice: initial?.startingPrice ?? 150000,
-    capacity: initial?.capacity ?? 300,
-    venueType: initial?.venueType || "Banquet Hall",
-    amenities: initial?.amenities || [],
+    profileImage: initial?.profileImage || "",
+    portfolioImages: initial?.portfolioImages || [],
+    startingPrice: initial?.startingPrice ?? 50000,
+    pricingUnit: initial?.pricingUnit || "package",
+    phone: initial?.phone || "+91 9800000000",
+    email: initial?.email || "hello@viwah.example.com",
+    address: initial?.address || "Delhi Wedding District, Delhi",
     rating: initial?.rating ?? 4.5,
     reviewCount: initial?.reviewCount ?? 0,
     featured: initial?.featured ?? false,
     status: initial?.status || "active",
-    youtubeVideos: initial?.youtubeVideos || [],
+    packages: JSON.stringify(
+      initial?.packages || [
+        {
+          name: "Essential",
+          price: 50000,
+          description:
+            "Focused coverage for intimate celebrations.",
+        },
+      ],
+      null,
+      2,
+    ),
   });
 
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
+
+  const [uploadingProfile, setUploadingProfile] = useState(false);
+  const [uploadingPortfolio, setUploadingPortfolio] =
+    useState(false);
 
   const update = (key: string, value: any) => {
     setF((current) => ({
@@ -80,183 +86,159 @@ export default function VenueForm({
   const input =
     "mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 outline-none focus:border-[#c8a45d]";
 
-  async function uploadImages(files: FileList | null) {
-    if (!files || files.length === 0) return;
+  async function uploadImage(
+    file: File,
+    type: "profile" | "portfolio",
+  ) {
+    if (!file.type.startsWith("image/")) {
+      throw new Error("Only image files are allowed.");
+    }
 
-    setUploading(true);
+    if (file.size > 10 * 1024 * 1024) {
+      throw new Error("Image must be smaller than 10MB.");
+    }
+
+    const formData = new FormData();
+
+    formData.append("file", file);
+    formData.append("type", "vendor");
+
+    const response = await fetch("/api/admin/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || "Unable to upload image.",
+      );
+    }
+
+    if (type === "profile") {
+      update("profileImage", data.url);
+    } else {
+      update("portfolioImages", [
+        ...f.portfolioImages,
+        data.url,
+      ]);
+    }
+  }
+
+  async function handleProfileUpload(
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    setUploadingProfile(true);
     setError("");
 
     try {
-      const uploadedUrls: string[] = [];
-
-      for (const file of Array.from(files)) {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const response = await fetch("/api/admin/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || "Unable to upload image.");
-        }
-
-        uploadedUrls.push(data.url);
-      }
-
-      update("images", [...f.images, ...uploadedUrls]);
+      await uploadImage(file, "profile");
     } catch (error) {
       setError(
         error instanceof Error
           ? error.message
-          : "Unable to upload image."
+          : "Unable to upload image.",
       );
     } finally {
-      setUploading(false);
+      setUploadingProfile(false);
+      e.target.value = "";
     }
   }
 
-  function removeImage(index: number) {
-    update(
-      "images",
-      f.images.filter((_: string, i: number) => i !== index)
-    );
-  }
-
-  function addYoutubeVideo() {
-    update("youtubeVideos", [
-      ...f.youtubeVideos,
-      {
-        title: "",
-        url: "",
-      },
-    ]);
-  }
-
-  function updateYoutubeVideo(
-    index: number,
-    key: keyof YoutubeVideo,
-    value: string
+  async function handlePortfolioUpload(
+    e: React.ChangeEvent<HTMLInputElement>,
   ) {
-    const updated = [...f.youtubeVideos];
+    const files = Array.from(e.target.files || []);
 
-    updated[index] = {
-      ...updated[index],
-      [key]: value,
-    };
+    if (!files.length) return;
 
-    update("youtubeVideos", updated);
-  }
+    setUploadingPortfolio(true);
+    setError("");
 
-  function removeYoutubeVideo(index: number) {
-    update(
-      "youtubeVideos",
-      f.youtubeVideos.filter(
-        (_: YoutubeVideo, i: number) => i !== index
-      )
-    );
-  }
-
-  function getYoutubeEmbedUrl(url: string) {
     try {
-      const parsed = new URL(url);
-
-      if (parsed.hostname === "youtu.be") {
-        const id = parsed.pathname.slice(1);
-
-        if (id) {
-          return `https://www.youtube.com/embed/${id}`;
-        }
+      for (const file of files) {
+        await uploadImage(file, "portfolio");
       }
-
-      if (
-        parsed.hostname.includes("youtube.com") &&
-        parsed.searchParams.get("v")
-      ) {
-        return `https://www.youtube.com/embed/${parsed.searchParams.get(
-          "v"
-        )}`;
-      }
-
-      if (
-        parsed.hostname.includes("youtube.com") &&
-        parsed.pathname.startsWith("/embed/")
-      ) {
-        return url;
-      }
-
-      return "";
-    } catch {
-      return "";
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Unable to upload image.",
+      );
+    } finally {
+      setUploadingPortfolio(false);
+      e.target.value = "";
     }
   }
 
-  async function submit(e: React.FormEvent<HTMLFormElement>) {
+  function removePortfolioImage(index: number) {
+    update(
+      "portfolioImages",
+      f.portfolioImages.filter(
+        (_: string, i: number) => i !== index,
+      ),
+    );
+  }
+
+  async function submit(
+    e: React.FormEvent<HTMLFormElement>,
+  ) {
     e.preventDefault();
 
     setSaving(true);
     setError("");
 
     try {
-      const youtubeVideos = f.youtubeVideos
-        .map((video: YoutubeVideo) => ({
-          title: video.title.trim(),
-          url: video.url.trim(),
-        }))
-        .filter(
-          (video: YoutubeVideo) =>
-            video.title && video.url
-        );
+      let packages = [];
 
-      for (const video of youtubeVideos) {
-        if (!getYoutubeEmbedUrl(video.url)) {
-          throw new Error(
-            `Invalid YouTube URL for "${video.title}".`
-          );
-        }
+      try {
+        packages = JSON.parse(f.packages);
+      } catch {
+        throw new Error("Packages must be valid JSON.");
       }
 
       const payload = {
         ...f,
         startingPrice: Number(f.startingPrice),
-        capacity: Number(f.capacity),
         rating: Number(f.rating),
         reviewCount: Number(f.reviewCount),
-        images: f.images.filter(Boolean),
-        youtubeVideos,
+        portfolioImages: f.portfolioImages,
+        packages,
       };
 
       const response = await fetch(
         id
-          ? `/api/admin/venues/${id}`
-          : "/api/admin/venues",
+          ? `/api/admin/vendors/${id}`
+          : "/api/admin/vendors",
         {
           method: id ? "PUT" : "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(payload),
-        }
+        },
       );
 
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(
-          data.error || "Unable to save venue"
+          data.error || "Unable to save vendor",
         );
       }
 
-      router.push("/admin/venues");
+      router.push("/admin/vendors");
       router.refresh();
     } catch (error) {
       setError(
         error instanceof Error
           ? error.message
-          : "Unable to save venue"
+          : "Unable to save vendor",
       );
     } finally {
       setSaving(false);
@@ -269,10 +251,13 @@ export default function VenueForm({
       className="space-y-6"
     >
       <Card className="p-6">
-        <div className="grid gap-5 md:grid-cols-2">
-          <label className="text-sm font-medium">
-            Venue name
+        <h2 className="font-serif text-2xl">
+          Vendor information
+        </h2>
 
+        <div className="mt-5 grid gap-5 md:grid-cols-2">
+          <label className="text-sm font-medium">
+            Vendor name
             <input
               className={input}
               value={f.name}
@@ -284,8 +269,24 @@ export default function VenueForm({
           </label>
 
           <label className="text-sm font-medium">
-            City
+            Category
+            <select
+              className={input}
+              value={f.category}
+              onChange={(e) =>
+                update("category", e.target.value)
+              }
+            >
+              {categories.map((category) => (
+                <option key={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </label>
 
+          <label className="text-sm font-medium">
+            City
             <select
               className={input}
               value={f.city}
@@ -302,47 +303,16 @@ export default function VenueForm({
           </label>
 
           <label className="text-sm font-medium">
-            Location
-
-            <input
-              className={input}
-              value={f.location}
-              onChange={(e) =>
-                update("location", e.target.value)
-              }
-              required
-            />
-          </label>
-
-          <label className="text-sm font-medium">
-            Venue type
-
-            <select
-              className={input}
-              value={f.venueType}
-              onChange={(e) =>
-                update("venueType", e.target.value)
-              }
-            >
-              {types.map((type) => (
-                <option key={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="text-sm font-medium">
             Starting price
-
             <input
               type="number"
+              min="0"
               className={input}
               value={f.startingPrice}
               onChange={(e) =>
                 update(
                   "startingPrice",
-                  e.target.value
+                  e.target.value,
                 )
               }
               required
@@ -350,17 +320,58 @@ export default function VenueForm({
           </label>
 
           <label className="text-sm font-medium">
-            Capacity
-
-            <input
-              type="number"
+            Pricing unit
+            <select
               className={input}
-              value={f.capacity}
+              value={f.pricingUnit}
               onChange={(e) =>
                 update(
-                  "capacity",
-                  e.target.value
+                  "pricingUnit",
+                  e.target.value,
                 )
+              }
+            >
+              <option value="package">
+                Package
+              </option>
+              <option value="per_plate">
+                Per plate (caterer)
+              </option>
+            </select>
+          </label>
+
+          <label className="text-sm font-medium">
+            Phone
+            <input
+              className={input}
+              value={f.phone}
+              onChange={(e) =>
+                update("phone", e.target.value)
+              }
+              required
+            />
+          </label>
+
+          <label className="text-sm font-medium">
+            Email
+            <input
+              type="email"
+              className={input}
+              value={f.email}
+              onChange={(e) =>
+                update("email", e.target.value)
+              }
+              required
+            />
+          </label>
+
+          <label className="text-sm font-medium">
+            Address
+            <input
+              className={input}
+              value={f.address}
+              onChange={(e) =>
+                update("address", e.target.value)
               }
               required
             />
@@ -368,7 +379,6 @@ export default function VenueForm({
 
           <label className="text-sm font-medium md:col-span-2">
             Description
-
             <textarea
               className={input}
               rows={4}
@@ -376,7 +386,7 @@ export default function VenueForm({
               onChange={(e) =>
                 update(
                   "description",
-                  e.target.value
+                  e.target.value,
                 )
               }
               required
@@ -385,203 +395,118 @@ export default function VenueForm({
         </div>
       </Card>
 
-      {/* IMAGE UPLOAD */}
       <Card className="p-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h2 className="font-serif text-2xl">
-              Venue photos
-            </h2>
+        <h2 className="font-serif text-2xl">
+          Vendor images
+        </h2>
 
-            <p className="mt-1 text-sm text-black/50">
-              Upload venue photos directly to Cloudinary.
-            </p>
-          </div>
+        <div className="mt-5">
+          <p className="text-sm font-medium">
+            Profile image
+          </p>
 
-          <label className="cursor-pointer rounded-xl bg-[#c8a45d] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90">
-            {uploading
+          {f.profileImage && (
+            <div className="mt-3 overflow-hidden rounded-2xl border bg-black/5">
+              <img
+                src={f.profileImage}
+                alt="Vendor profile"
+                className="h-56 w-full object-cover"
+              />
+            </div>
+          )}
+
+          <label className="mt-4 inline-flex cursor-pointer items-center rounded-xl border border-[#c8a45d] px-5 py-3 font-medium text-[#8d6c2d] hover:bg-[#c8a45d]/10">
+            {uploadingProfile
               ? "Uploading..."
-              : "Upload images"}
+              : f.profileImage
+                ? "Replace profile image"
+                : "Upload profile image"}
 
             <input
               type="file"
-              accept="image/jpeg,image/png,image/webp"
-              multiple
+              accept="image/*"
               className="hidden"
-              disabled={uploading}
-              onChange={(e) => {
-                uploadImages(e.target.files);
-                e.currentTarget.value = "";
-              }}
+              onChange={handleProfileUpload}
+              disabled={uploadingProfile}
             />
           </label>
         </div>
 
-        {f.images.length > 0 ? (
-          <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-            {f.images.map(
-              (image: string, index: number) => (
-                <div
-                  key={`${image}-${index}`}
-                  className="group relative overflow-hidden rounded-2xl border border-black/10 bg-black/5"
-                >
-                  <img
-                    src={image}
-                    alt={`Venue ${index + 1}`}
-                    className="aspect-square w-full object-cover"
-                  />
+        <div className="mt-8">
+          <p className="text-sm font-medium">
+            Portfolio images
+          </p>
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      removeImage(index)
-                    }
-                    className="absolute right-2 top-2 rounded-full bg-black/70 px-3 py-1.5 text-xs font-medium text-white opacity-0 transition group-hover:opacity-100"
-                  >
-                    Remove
-                  </button>
-                </div>
-              )
-            )}
-          </div>
-        ) : (
-          <div className="mt-6 rounded-2xl border border-dashed border-black/15 p-10 text-center text-sm text-black/45">
-            No venue photos uploaded yet.
-          </div>
-        )}
-      </Card>
+          <p className="mt-1 text-sm text-black/45">
+            You can select multiple images at once.
+          </p>
 
-      {/* YOUTUBE VIDEOS */}
-      <Card className="p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="font-serif text-2xl">
-              Wedding videos & highlights
-            </h2>
-
-            <p className="mt-1 text-sm text-black/50">
-              Add YouTube videos showing weddings,
-              parties, decor or venue highlights.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={addYoutubeVideo}
-            className="rounded-xl border border-[#c8a45d] px-4 py-2.5 text-sm font-semibold text-[#a47f36] transition hover:bg-[#c8a45d] hover:text-white"
-          >
-            + Add video
-          </button>
-        </div>
-
-        {f.youtubeVideos.length === 0 ? (
-          <div className="mt-6 rounded-2xl border border-dashed border-black/15 p-8 text-center text-sm text-black/45">
-            No YouTube videos added yet.
-          </div>
-        ) : (
-          <div className="mt-6 space-y-5">
-            {f.youtubeVideos.map(
-              (
-                video: YoutubeVideo,
-                index: number
-              ) => {
-                const embedUrl =
-                  getYoutubeEmbedUrl(
-                    video.url
-                  );
-
-                return (
+          {f.portfolioImages.length > 0 && (
+            <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
+              {f.portfolioImages.map(
+                (image: string, index: number) => (
                   <div
-                    key={index}
-                    className="rounded-2xl border border-black/10 bg-white p-5"
+                    key={`${image}-${index}`}
+                    className="group relative overflow-hidden rounded-2xl border"
                   >
-                    <div className="flex items-center justify-between gap-4">
-                      <h3 className="font-semibold">
-                        Video {index + 1}
-                      </h3>
+                    <img
+                      src={image}
+                      alt={`Portfolio ${index + 1}`}
+                      className="h-40 w-full object-cover"
+                    />
 
-                      <button
-                        type="button"
-                        onClick={() =>
-                          removeYoutubeVideo(index)
-                        }
-                        className="text-sm font-medium text-red-600"
-                      >
-                        Remove
-                      </button>
-                    </div>
-
-                    <div className="mt-4 grid gap-4 md:grid-cols-2">
-                      <label className="text-sm font-medium">
-                        Video title
-
-                        <input
-                          className={input}
-                          placeholder="Wedding Reception Highlights"
-                          value={video.title}
-                          onChange={(e) =>
-                            updateYoutubeVideo(
-                              index,
-                              "title",
-                              e.target.value
-                            )
-                          }
-                        />
-                      </label>
-
-                      <label className="text-sm font-medium">
-                        YouTube URL
-
-                        <input
-                          type="url"
-                          className={input}
-                          placeholder="https://www.youtube.com/watch?v=..."
-                          value={video.url}
-                          onChange={(e) =>
-                            updateYoutubeVideo(
-                              index,
-                              "url",
-                              e.target.value
-                            )
-                          }
-                        />
-                      </label>
-                    </div>
-
-                    {embedUrl && (
-                      <div className="mt-5 overflow-hidden rounded-2xl bg-black">
-                        <div className="aspect-video">
-                          <iframe
-                            src={embedUrl}
-                            title={
-                              video.title ||
-                              `YouTube video ${index + 1}`
-                            }
-                            className="h-full w-full"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                            allowFullScreen
-                          />
-                        </div>
-                      </div>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        removePortfolioImage(index)
+                      }
+                      className="absolute right-2 top-2 rounded-lg bg-black/70 px-3 py-1.5 text-xs font-medium text-white"
+                    >
+                      Remove
+                    </button>
                   </div>
-                );
-              }
-            )}
-          </div>
-        )}
+                ),
+              )}
+            </div>
+          )}
+
+          <label className="mt-4 inline-flex cursor-pointer items-center rounded-xl border border-[#c8a45d] px-5 py-3 font-medium text-[#8d6c2d] hover:bg-[#c8a45d]/10">
+            {uploadingPortfolio
+              ? "Uploading..."
+              : "Upload portfolio images"}
+
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handlePortfolioUpload}
+              disabled={uploadingPortfolio}
+            />
+          </label>
+        </div>
       </Card>
 
-      {/* VENUE SETTINGS */}
       <Card className="p-6">
         <h2 className="font-serif text-2xl">
-          Venue settings
+          Packages & marketplace settings
         </h2>
+
+        <label className="mt-4 block text-sm font-medium">
+          Packages JSON
+          <textarea
+            className={input}
+            rows={9}
+            value={f.packages}
+            onChange={(e) =>
+              update("packages", e.target.value)
+            }
+          />
+        </label>
 
         <div className="mt-5 grid gap-5 md:grid-cols-3">
           <label className="text-sm font-medium">
             Rating
-
             <input
               type="number"
               step="0.1"
@@ -597,7 +522,6 @@ export default function VenueForm({
 
           <label className="text-sm font-medium">
             Review count
-
             <input
               type="number"
               min="0"
@@ -606,7 +530,7 @@ export default function VenueForm({
               onChange={(e) =>
                 update(
                   "reviewCount",
-                  e.target.value
+                  e.target.value,
                 )
               }
             />
@@ -614,7 +538,6 @@ export default function VenueForm({
 
           <label className="text-sm font-medium">
             Status
-
             <select
               className={input}
               value={f.status}
@@ -625,44 +548,11 @@ export default function VenueForm({
               <option value="active">
                 Active
               </option>
-
               <option value="inactive">
                 Inactive
               </option>
             </select>
           </label>
-        </div>
-
-        <div className="mt-5 flex flex-wrap gap-3">
-          {amenities.map((amenity) => (
-            <label
-              key={amenity}
-              className="flex items-center gap-2 rounded-full border px-3 py-2 text-sm"
-            >
-              <input
-                type="checkbox"
-                checked={f.amenities.includes(
-                  amenity
-                )}
-                onChange={(e) =>
-                  update(
-                    "amenities",
-                    e.target.checked
-                      ? [
-                          ...f.amenities,
-                          amenity,
-                        ]
-                      : f.amenities.filter(
-                          (item: string) =>
-                            item !== amenity
-                        )
-                  )
-                }
-              />
-
-              {amenity}
-            </label>
-          ))}
         </div>
 
         <label className="mt-5 flex items-center gap-2 text-sm">
@@ -672,12 +562,11 @@ export default function VenueForm({
             onChange={(e) =>
               update(
                 "featured",
-                e.target.checked
+                e.target.checked,
               )
             }
           />
-
-          Featured venue
+          Featured vendor
         </label>
       </Card>
 
@@ -697,14 +586,14 @@ export default function VenueForm({
         </button>
 
         <button
-          disabled={saving || uploading}
+          disabled={saving}
           className="rounded-xl bg-[#c8a45d] px-6 py-3 font-semibold text-white disabled:opacity-60"
         >
           {saving
             ? "Saving..."
             : id
               ? "Save changes"
-              : "Create venue"}
+              : "Create vendor"}
         </button>
       </div>
     </form>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Card } from "./admin-shell";
 
 const cities = [
@@ -57,7 +57,8 @@ export default function VenueForm({
 
     images: initial?.images || [],
 
-    youtubeVideos: initial?.youtubeVideos || ([] as YoutubeVideo[]),
+    youtubeVideos:
+      initial?.youtubeVideos || ([] as YoutubeVideo[]),
 
     startingPrice: initial?.startingPrice ?? 150000,
     capacity: initial?.capacity ?? 300,
@@ -90,7 +91,7 @@ export default function VenueForm({
   // =========================
 
   async function uploadImages(
-    event: React.ChangeEvent<HTMLInputElement>,
+    event: ChangeEvent<HTMLInputElement>,
   ) {
     const files = event.target.files;
 
@@ -104,26 +105,39 @@ export default function VenueForm({
 
       for (const file of Array.from(files)) {
         if (!file.type.startsWith("image/")) {
-          throw new Error(`${file.name} is not an image file.`);
+          throw new Error(
+            `${file.name} is not an image file.`,
+          );
         }
 
         if (file.size > 10 * 1024 * 1024) {
-          throw new Error(`${file.name} is larger than 10MB.`);
+          throw new Error(
+            `${file.name} is larger than 10MB.`,
+          );
         }
 
         const formData = new FormData();
 
         formData.append("file", file);
 
-        const response = await fetch("/api/admin/upload", {
-          method: "POST",
-          body: formData,
-        });
+        // IMPORTANT:
+        // Tells API this upload belongs to a venue.
+        formData.append("type", "venue");
+
+        const response = await fetch(
+          "/api/admin/upload",
+          {
+            method: "POST",
+            body: formData,
+          },
+        );
 
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || "Image upload failed.");
+          throw new Error(
+            data.error || "Image upload failed.",
+          );
         }
 
         uploadedUrls.push(data.url);
@@ -131,7 +145,10 @@ export default function VenueForm({
 
       setF((current) => ({
         ...current,
-        images: [...current.images, ...uploadedUrls],
+        images: [
+          ...current.images,
+          ...uploadedUrls,
+        ],
       }));
     } catch (err) {
       setError(
@@ -195,9 +212,11 @@ export default function VenueForm({
   function removeYoutubeVideo(index: number) {
     setF((current) => ({
       ...current,
-      youtubeVideos: current.youtubeVideos.filter(
-        (_: YoutubeVideo, i: number) => i !== index,
-      ),
+      youtubeVideos:
+        current.youtubeVideos.filter(
+          (_: YoutubeVideo, i: number) =>
+            i !== index,
+        ),
     }));
   }
 
@@ -222,7 +241,7 @@ export default function VenueForm({
   // SAVE VENUE
   // =========================
 
-  async function submit(e: React.FormEvent<HTMLFormElement>) {
+  async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     setSaving(true);
@@ -299,11 +318,13 @@ export default function VenueForm({
   }
 
   return (
-    <form onSubmit={submit} className="space-y-6">
-
-      {/* ================================= */}
-      {/* BASIC VENUE INFORMATION */}
-      {/* ================================= */}
+    <form
+      onSubmit={submit}
+      className="space-y-6"
+    >
+      {/* ================================
+          BASIC VENUE INFORMATION
+      ================================= */}
 
       <Card className="p-6">
         <h2 className="font-serif text-2xl">
@@ -311,7 +332,6 @@ export default function VenueForm({
         </h2>
 
         <div className="mt-5 grid gap-5 md:grid-cols-2">
-
           <label className="text-sm font-medium">
             Venue name
 
@@ -336,7 +356,9 @@ export default function VenueForm({
               }
             >
               {cities.map((city) => (
-                <option key={city}>{city}</option>
+                <option key={city}>
+                  {city}
+                </option>
               ))}
             </select>
           </label>
@@ -365,7 +387,9 @@ export default function VenueForm({
               }
             >
               {types.map((type) => (
-                <option key={type}>{type}</option>
+                <option key={type}>
+                  {type}
+                </option>
               ))}
             </select>
           </label>
@@ -375,6 +399,7 @@ export default function VenueForm({
 
             <input
               type="number"
+              min="0"
               className={input}
               value={f.startingPrice}
               onChange={(e) =>
@@ -392,6 +417,7 @@ export default function VenueForm({
 
             <input
               type="number"
+              min="1"
               className={input}
               value={f.capacity}
               onChange={(e) =>
@@ -420,13 +446,12 @@ export default function VenueForm({
               required
             />
           </label>
-
         </div>
       </Card>
 
-      {/* ================================= */}
-      {/* CLOUDINARY PHOTOS */}
-      {/* ================================= */}
+      {/* ================================
+          CLOUDINARY PHOTOS
+      ================================= */}
 
       <Card className="p-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -437,7 +462,8 @@ export default function VenueForm({
 
             <p className="mt-1 text-sm text-black/50">
               Upload high-quality venue photos.
-              Images are securely stored on Cloudinary.
+              Images are securely stored on
+              Cloudinary.
             </p>
           </div>
 
@@ -503,15 +529,16 @@ export default function VenueForm({
             </p>
 
             <p className="mt-1 text-sm text-black/45">
-              Click “Upload photos” to add venue images.
+              Click “Upload photos” to add venue
+              images.
             </p>
           </div>
         )}
       </Card>
 
-      {/* ================================= */}
-      {/* YOUTUBE VIDEOS */}
-      {/* ================================= */}
+      {/* ================================
+          YOUTUBE VIDEOS
+      ================================= */}
 
       <Card className="p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -521,8 +548,9 @@ export default function VenueForm({
             </h2>
 
             <p className="mt-1 text-sm text-black/50">
-              Add YouTube videos of weddings, receptions,
-              sangeet nights and other venue events.
+              Add YouTube videos of weddings,
+              receptions, sangeet nights and
+              other venue events.
             </p>
           </div>
 
@@ -542,8 +570,8 @@ export default function VenueForm({
             </p>
 
             <p className="mt-1 text-sm text-black/45">
-              Add videos to showcase real events hosted
-              at this venue.
+              Add videos to showcase real events
+              hosted at this venue.
             </p>
           </div>
         ) : (
@@ -620,7 +648,9 @@ export default function VenueForm({
                             )}
                             title={
                               video.title ||
-                              `YouTube video ${index + 1}`
+                              `YouTube video ${
+                                index + 1
+                              }`
                             }
                             className="h-full w-full"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -636,9 +666,9 @@ export default function VenueForm({
         )}
       </Card>
 
-      {/* ================================= */}
-      {/* VENUE SETTINGS */}
-      {/* ================================= */}
+      {/* ================================
+          VENUE SETTINGS
+      ================================= */}
 
       <Card className="p-6">
         <h2 className="font-serif text-2xl">
@@ -646,7 +676,6 @@ export default function VenueForm({
         </h2>
 
         <div className="mt-5 grid gap-5 md:grid-cols-3">
-
           <label className="text-sm font-medium">
             Rating
 
@@ -699,7 +728,6 @@ export default function VenueForm({
               </option>
             </select>
           </label>
-
         </div>
 
         <div className="mt-5 flex flex-wrap gap-3">
@@ -750,9 +778,9 @@ export default function VenueForm({
         </label>
       </Card>
 
-      {/* ================================= */}
-      {/* ERROR */}
-      {/* ================================= */}
+      {/* ================================
+          ERROR
+      ================================= */}
 
       {error && (
         <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -760,9 +788,9 @@ export default function VenueForm({
         </p>
       )}
 
-      {/* ================================= */}
-      {/* ACTIONS */}
-      {/* ================================= */}
+      {/* ================================
+          ACTIONS
+      ================================= */}
 
       <div className="flex justify-end gap-3">
         <button
@@ -796,35 +824,41 @@ function getYoutubeEmbedUrl(url: string) {
   try {
     const parsed = new URL(url);
 
+    // youtu.be/VIDEO_ID
     if (
       parsed.hostname === "youtu.be" ||
       parsed.hostname === "www.youtu.be"
     ) {
-      const videoId = parsed.pathname.slice(1);
+      const videoId =
+        parsed.pathname.slice(1);
 
       return videoId
         ? `https://www.youtube.com/embed/${videoId}`
         : "";
     }
 
-    const videoId = parsed.searchParams.get("v");
+    // youtube.com/watch?v=VIDEO_ID
+    const videoId =
+      parsed.searchParams.get("v");
 
     if (videoId) {
       return `https://www.youtube.com/embed/${videoId}`;
     }
 
+    // youtube.com/shorts/VIDEO_ID
     if (
       parsed.pathname.startsWith("/shorts/")
     ) {
-      const videoId = parsed.pathname
+      const shortId = parsed.pathname
         .split("/")[2]
         ?.split("/")[0];
 
-      return videoId
-        ? `https://www.youtube.com/embed/${videoId}`
+      return shortId
+        ? `https://www.youtube.com/embed/${shortId}`
         : "";
     }
 
+    // youtube.com/embed/VIDEO_ID
     if (
       parsed.pathname.startsWith("/embed/")
     ) {
