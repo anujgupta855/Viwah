@@ -7,9 +7,17 @@ const contactMessageSchema = new Schema(
     phone: { type: String, required: true, trim: true },
     subject: { type: String, required: true, trim: true },
     message: { type: String, required: true, trim: true },
-    status: { type: String, enum: ["new", "read", "replied", "closed"], default: "new", index: true },
+
+    status: {
+      type: String,
+      enum: ["new", "read", "accepted", "rejected", "replied", "closed"],
+      default: "new",
+      index: true,
+    },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
-export const ContactMessage = mongoose.models.ContactMessage || mongoose.model("ContactMessage", contactMessageSchema);
+export const ContactMessage =
+  mongoose.models.ContactMessage ||
+  mongoose.model("ContactMessage", contactMessageSchema);

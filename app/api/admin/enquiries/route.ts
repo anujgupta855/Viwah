@@ -6,7 +6,10 @@ import { getAdminSession } from "../../../../lib/admin-auth";
 export async function GET() {
   try {
     if (!(await getAdminSession())) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
     await connectDB();
@@ -37,7 +40,6 @@ export async function GET() {
       vendor: null,
       venue: null,
       eventDate: null,
-      status: "New",
     }));
 
     const items = [...enquiryItems, ...contactItems]
