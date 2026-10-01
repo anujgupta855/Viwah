@@ -25,9 +25,10 @@ const cities = [
   "Chandigarh",
 ];
 
-type UploadImage = {
-  url: string;
-  publicId?: string;
+type PackageItem = {
+  name: string;
+  price: number | string;
+  description: string;
 };
 
 export default function VendorForm({
@@ -55,18 +56,17 @@ export default function VendorForm({
     reviewCount: initial?.reviewCount ?? 0,
     featured: initial?.featured ?? false,
     status: initial?.status || "active",
-    packages: JSON.stringify(
-      initial?.packages || [
-        {
-          name: "Essential",
-          price: 50000,
-          description:
-            "Focused coverage for intimate celebrations.",
-        },
-      ],
-      null,
-      2,
-    ),
+    packages:
+      initial?.packages?.length > 0
+        ? initial.packages
+        : [
+            {
+              name: "Essential",
+              price: 50000,
+              description:
+                "Focused coverage for intimate celebrations.",
+            },
+          ],
   });
 
   const [error, setError] = useState("");
@@ -85,6 +85,49 @@ export default function VendorForm({
 
   const input =
     "mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 outline-none focus:border-[#c8a45d]";
+
+  // -----------------------------
+  // Package helpers
+  // -----------------------------
+
+  const addPackage = () => {
+    update("packages", [
+      ...f.packages,
+      {
+        name: "",
+        price: 0,
+        description: "",
+      },
+    ]);
+  };
+
+  const removePackage = (index: number) => {
+    update(
+      "packages",
+      f.packages.filter(
+        (_: PackageItem, i: number) => i !== index,
+      ),
+    );
+  };
+
+  const updatePackage = (
+    index: number,
+    key: keyof PackageItem,
+    value: string | number,
+  ) => {
+    const packages = [...f.packages];
+
+    packages[index] = {
+      ...packages[index],
+      [key]: value,
+    };
+
+    update("packages", packages);
+  };
+
+  // -----------------------------
+  // Cloudinary image upload
+  // -----------------------------
 
   async function uploadImage(
     file: File,
@@ -185,6 +228,10 @@ export default function VendorForm({
     );
   }
 
+  // -----------------------------
+  // Submit
+  // -----------------------------
+
   async function submit(
     e: React.FormEvent<HTMLFormElement>,
   ) {
@@ -194,12 +241,32 @@ export default function VendorForm({
     setError("");
 
     try {
-      let packages = [];
+      if (!f.packages.length) {
+        throw new Error(
+          "Please add at least one package.",
+        );
+      }
 
-      try {
-        packages = JSON.parse(f.packages);
-      } catch {
-        throw new Error("Packages must be valid JSON.");
+      const packages: PackageItem[] = f.packages.map(
+        (pkg: PackageItem) => ({
+          name: String(pkg.name).trim(),
+          price: Number(pkg.price),
+          description: String(pkg.description).trim(),
+        }),
+      );
+
+const invalidPackage = packages.some(
+  (pkg) =>
+    !pkg.name ||
+    !pkg.description ||
+    Number.isNaN(Number(pkg.price)) ||
+    Number(pkg.price) < 0,
+);
+
+      if (invalidPackage) {
+        throw new Error(
+          "Please complete all package details correctly.",
+        );
       }
 
       const payload = {
@@ -250,6 +317,9 @@ export default function VendorForm({
       onSubmit={submit}
       className="space-y-6"
     >
+      {/* --------------------------------
+          Vendor information
+      -------------------------------- */}
       <Card className="p-6">
         <h2 className="font-serif text-2xl">
           Vendor information
@@ -258,6 +328,7 @@ export default function VendorForm({
         <div className="mt-5 grid gap-5 md:grid-cols-2">
           <label className="text-sm font-medium">
             Vendor name
+
             <input
               className={input}
               value={f.name}
@@ -270,6 +341,7 @@ export default function VendorForm({
 
           <label className="text-sm font-medium">
             Category
+
             <select
               className={input}
               value={f.category}
@@ -287,6 +359,7 @@ export default function VendorForm({
 
           <label className="text-sm font-medium">
             City
+
             <select
               className={input}
               value={f.city}
@@ -304,6 +377,7 @@ export default function VendorForm({
 
           <label className="text-sm font-medium">
             Starting price
+
             <input
               type="number"
               min="0"
@@ -321,6 +395,7 @@ export default function VendorForm({
 
           <label className="text-sm font-medium">
             Pricing unit
+
             <select
               className={input}
               value={f.pricingUnit}
@@ -334,6 +409,7 @@ export default function VendorForm({
               <option value="package">
                 Package
               </option>
+
               <option value="per_plate">
                 Per plate (caterer)
               </option>
@@ -342,6 +418,7 @@ export default function VendorForm({
 
           <label className="text-sm font-medium">
             Phone
+
             <input
               className={input}
               value={f.phone}
@@ -354,6 +431,7 @@ export default function VendorForm({
 
           <label className="text-sm font-medium">
             Email
+
             <input
               type="email"
               className={input}
@@ -367,6 +445,7 @@ export default function VendorForm({
 
           <label className="text-sm font-medium">
             Address
+
             <input
               className={input}
               value={f.address}
@@ -379,6 +458,7 @@ export default function VendorForm({
 
           <label className="text-sm font-medium md:col-span-2">
             Description
+
             <textarea
               className={input}
               rows={4}
@@ -395,6 +475,9 @@ export default function VendorForm({
         </div>
       </Card>
 
+      {/* --------------------------------
+          Vendor images
+      -------------------------------- */}
       <Card className="p-6">
         <h2 className="font-serif text-2xl">
           Vendor images
@@ -487,95 +570,211 @@ export default function VendorForm({
         </div>
       </Card>
 
-      <Card className="p-6">
-        <h2 className="font-serif text-2xl">
+      {/* --------------------------------
           Packages & marketplace settings
-        </h2>
+      -------------------------------- */}
+      <Card className="p-6">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="font-serif text-2xl">
+              Packages & marketplace settings
+            </h2>
 
-        <label className="mt-4 block text-sm font-medium">
-          Packages JSON
-          <textarea
-            className={input}
-            rows={9}
-            value={f.packages}
-            onChange={(e) =>
-              update("packages", e.target.value)
-            }
-          />
-        </label>
+            <p className="mt-1 text-sm text-black/50">
+              Add the packages offered by this vendor.
+            </p>
+          </div>
 
-        <div className="mt-5 grid gap-5 md:grid-cols-3">
-          <label className="text-sm font-medium">
-            Rating
+          <button
+            type="button"
+            onClick={addPackage}
+            className="w-fit rounded-xl border border-[#c8a45d] px-5 py-3 font-medium text-[#8d6c2d] hover:bg-[#c8a45d]/10"
+          >
+            + Add package
+          </button>
+        </div>
+
+        {/* Package cards */}
+        <div className="mt-5 space-y-4">
+          {f.packages.map(
+            (pkg: PackageItem, index: number) => (
+              <div
+                key={index}
+                className="rounded-2xl border border-black/10 bg-white p-5"
+              >
+                <div className="mb-5 flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">
+                    Package {index + 1}
+                  </h3>
+
+                  {f.packages.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        removePackage(index)
+                      }
+                      className="rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid gap-5 md:grid-cols-2">
+                  <label className="text-sm font-medium">
+                    Package name
+
+                    <input
+                      className={input}
+                      value={pkg.name}
+                      placeholder="e.g. Essential"
+                      onChange={(e) =>
+                        updatePackage(
+                          index,
+                          "name",
+                          e.target.value,
+                        )
+                      }
+                      required
+                    />
+                  </label>
+
+                  <label className="text-sm font-medium">
+                    Package price
+
+                    <input
+                      type="number"
+                      min="0"
+                      className={input}
+                      value={pkg.price}
+                      placeholder="50000"
+                      onChange={(e) =>
+                        updatePackage(
+                          index,
+                          "price",
+                          e.target.value,
+                        )
+                      }
+                      required
+                    />
+                  </label>
+
+                  <label className="text-sm font-medium md:col-span-2">
+                    Description
+
+                    <textarea
+                      className={input}
+                      rows={3}
+                      value={pkg.description}
+                      placeholder="Describe what's included in this package..."
+                      onChange={(e) =>
+                        updatePackage(
+                          index,
+                          "description",
+                          e.target.value,
+                        )
+                      }
+                      required
+                    />
+                  </label>
+                </div>
+              </div>
+            ),
+          )}
+        </div>
+
+        {/* Marketplace settings */}
+        <div className="mt-8 border-t border-black/10 pt-6">
+          <h3 className="text-lg font-semibold">
+            Marketplace settings
+          </h3>
+
+          <div className="mt-5 grid gap-5 md:grid-cols-3">
+            <label className="text-sm font-medium">
+              Rating
+
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                max="5"
+                className={input}
+                value={f.rating}
+                onChange={(e) =>
+                  update(
+                    "rating",
+                    e.target.value,
+                  )
+                }
+              />
+            </label>
+
+            <label className="text-sm font-medium">
+              Review count
+
+              <input
+                type="number"
+                min="0"
+                className={input}
+                value={f.reviewCount}
+                onChange={(e) =>
+                  update(
+                    "reviewCount",
+                    e.target.value,
+                  )
+                }
+              />
+            </label>
+
+            <label className="text-sm font-medium">
+              Status
+
+              <select
+                className={input}
+                value={f.status}
+                onChange={(e) =>
+                  update(
+                    "status",
+                    e.target.value,
+                  )
+                }
+              >
+                <option value="active">
+                  Active
+                </option>
+
+                <option value="inactive">
+                  Inactive
+                </option>
+              </select>
+            </label>
+          </div>
+
+          <label className="mt-5 flex items-center gap-2 text-sm">
             <input
-              type="number"
-              step="0.1"
-              min="0"
-              max="5"
-              className={input}
-              value={f.rating}
-              onChange={(e) =>
-                update("rating", e.target.value)
-              }
-            />
-          </label>
-
-          <label className="text-sm font-medium">
-            Review count
-            <input
-              type="number"
-              min="0"
-              className={input}
-              value={f.reviewCount}
+              type="checkbox"
+              checked={f.featured}
               onChange={(e) =>
                 update(
-                  "reviewCount",
-                  e.target.value,
+                  "featured",
+                  e.target.checked,
                 )
               }
             />
-          </label>
 
-          <label className="text-sm font-medium">
-            Status
-            <select
-              className={input}
-              value={f.status}
-              onChange={(e) =>
-                update("status", e.target.value)
-              }
-            >
-              <option value="active">
-                Active
-              </option>
-              <option value="inactive">
-                Inactive
-              </option>
-            </select>
+            Featured vendor
           </label>
         </div>
-
-        <label className="mt-5 flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={f.featured}
-            onChange={(e) =>
-              update(
-                "featured",
-                e.target.checked,
-              )
-            }
-          />
-          Featured vendor
-        </label>
       </Card>
 
+      {/* Error */}
       {error && (
         <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </p>
       )}
 
+      {/* Actions */}
       <div className="flex justify-end gap-3">
         <button
           type="button"
@@ -586,6 +785,7 @@ export default function VendorForm({
         </button>
 
         <button
+          type="submit"
           disabled={saving}
           className="rounded-xl bg-[#c8a45d] px-6 py-3 font-semibold text-white disabled:opacity-60"
         >
