@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { connectDB } from "@/lib/db";
-
 import { Review, Venue } from "@/models";
 
 export const dynamic = "force-dynamic";
@@ -15,14 +14,18 @@ export async function GET(
 
     const { slug } = await params;
 
+    console.log("VENUE SLUG:", slug);
+
     const venueDoc = await Venue.findOne({
-      slug,
+      slug: slug.trim().toLowerCase(),
       status: "active",
     });
 
+    console.log("VENUE FOUND:", !!venueDoc);
+
     if (!venueDoc) {
       return NextResponse.json(
-        { message: "Venue not found." },
+        { message: "Venue not found.", slug },
         { status: 404 },
       );
     }
@@ -35,17 +38,23 @@ export async function GET(
       .limit(20)
       .lean();
 
-    const venue = venueDoc.toObject();
+    console.log("REVIEWS FOUND:", reviews.length);
 
     return NextResponse.json({
-      venue,
+      venue: venueDoc.toObject(),
       reviews,
     });
   } catch (error) {
-    console.error("GET /api/venues/[slug]", error);
+    console.error("GET /api/venues/[slug] ERROR:", error);
 
     return NextResponse.json(
-      { message: "Unable to load venue." },
+      {
+        message: "Unable to load venue.",
+        error:
+          error instanceof Error
+            ? error.message
+            : String(error),
+      },
       { status: 500 },
     );
   }

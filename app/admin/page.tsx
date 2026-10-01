@@ -1,6 +1,218 @@
 "use client";
+
 import { useEffect, useState } from "react";
-import AdminShell,{Card,PageHeader} from "../../components/admin/admin-shell";
-import { ArrowUpRight, Building2, ClipboardList, MessageSquare, Store, Star } from "lucide-react";
+import AdminShell, {
+  Card,
+  PageHeader,
+} from "../../components/admin/admin-shell";
+import {
+  ArrowUpRight,
+  Building2,
+  MessageSquare,
+  Store,
+  Star,
+} from "lucide-react";
 import Link from "next/link";
-export default function Dashboard(){const [data,setData]=useState<any>(null);const [error,setError]=useState("");useEffect(()=>{fetch("/api/admin/stats").then(async r=>{if(!r.ok)throw new Error();return r.json()}).then(setData).catch(()=>setError("Unable to load dashboard data."))},[]);const s=data?.stats||{};const cards=[["Total Vendors",s.vendors,Store],["Total Venues",s.venues,Building2],["Reviews",s.reviews,Star],["Enquiries",s.enquiries,MessageSquare],["Active Vendors",s.activeVendors,Store],["Active Venues",s.activeVenues,Building2]];return <AdminShell><PageHeader title="Dashboard" description="A live overview of the Viwah marketplace."/><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{cards.map(([label,value,Icon])=><Card key={label as string} className="p-5"><div className="flex items-start justify-between"><div><p className="text-sm text-black/50">{label as string}</p><p className="mt-2 text-3xl font-semibold">{value??"—"}</p></div><span className="grid h-10 w-10 place-items-center rounded-xl bg-[#f1e6cf] text-[#8a6a2f]"><Icon size={19}/></span></div></Card>)}</div>{error&&<p className="mt-5 text-red-600">{error}</p>}<div className="mt-7 grid gap-6 xl:grid-cols-2"><Card><div className="flex items-center justify-between border-b p-5"><h2 className="font-serif text-2xl">Recent vendors</h2><Link href="/admin/vendors" className="text-sm text-[#8a6a2f]">View all</Link></div><div className="divide-y">{(data?.recent?.vendors||[]).map((v:any)=><div key={v._id} className="flex items-center justify-between p-5"><div><p className="font-medium">{v.name}</p><p className="text-sm text-black/45">{v.category} · {v.city}</p></div><span className="rounded-full bg-black/5 px-3 py-1 text-xs">{v.status}</span></div>)}{data&&!data.recent.vendors.length&&<p className="p-5 text-sm text-black/45">No vendors yet.</p>}</div></Card><Card><div className="flex items-center justify-between border-b p-5"><h2 className="font-serif text-2xl">Recent enquiries</h2><Link href="/admin/enquiries" className="text-sm text-[#8a6a2f]">View all</Link></div><div className="divide-y">{(data?.recent?.enquiries||[]).map((e:any)=><div key={e._id} className="flex items-center justify-between p-5"><div><p className="font-medium">{e.name}</p><p className="text-sm text-black/45">{e.vendor?.name||e.venue?.name||"Marketplace enquiry"}</p></div><span className="rounded-full bg-[#f1e6cf] px-3 py-1 text-xs text-[#8a6a2f]">{e.status}</span></div>)}</div></Card></div><Card className="mt-6 p-5"><div className="flex items-center justify-between"><div><h2 className="font-serif text-2xl">Quick actions</h2><p className="mt-1 text-sm text-black/45">Create marketplace inventory without leaving the dashboard.</p></div><ArrowUpRight className="text-[#c8a45d]"/></div><div className="mt-4 flex flex-wrap gap-3"><Link href="/admin/vendors/new" className="rounded-xl bg-[#222] px-4 py-3 text-sm font-medium text-white">Add vendor</Link><Link href="/admin/venues/new" className="rounded-xl border px-4 py-3 text-sm font-medium">Add venue</Link></div></Card></AdminShell>}
+
+export default function Dashboard() {
+  const [data, setData] = useState<any>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetch("/api/admin/stats")
+      .then(async (r) => {
+        if (!r.ok) {
+          throw new Error();
+        }
+
+        return r.json();
+      })
+      .then(setData)
+      .catch(() =>
+        setError("Unable to load dashboard data."),
+      );
+  }, []);
+
+  const s = data?.stats || {};
+
+  const cards = [
+    ["Total Vendors", s.vendors, Store, "/admin/vendors"],
+    ["Total Venues", s.venues, Building2, "/admin/venues"],
+    ["Reviews", s.reviews, Star, "/admin/reviews"],
+    ["Enquiries", s.enquiries, MessageSquare, "/admin/enquiries"],
+    ["Active Vendors", s.activeVendors, Store, "/admin/vendors"],
+    ["Active Venues", s.activeVenues, Building2, "/admin/venues"],
+  ] as const;
+
+  return (
+    <AdminShell>
+      <PageHeader
+        title="Dashboard"
+        description="A live overview of the Viwah marketplace."
+      />
+
+      {/* STAT CARDS */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {cards.map(([label, value, Icon, href]) => (
+          <Link
+            key={label}
+            href={href}
+            className="block rounded-2xl transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#c8a45d]"
+          >
+            <Card className="p-5 transition">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-black/50">
+                    {label}
+                  </p>
+
+                  <p className="mt-2 text-3xl font-semibold">
+                    {value ?? "—"}
+                  </p>
+                </div>
+
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#f1e6cf] text-[#8a6a2f]">
+                  <Icon size={19} />
+                </span>
+              </div>
+            </Card>
+          </Link>
+        ))}
+      </div>
+
+      {error && (
+        <p className="mt-5 text-red-600">
+          {error}
+        </p>
+      )}
+
+      {/* RECENT ACTIVITY */}
+      <div className="mt-7 grid gap-6 xl:grid-cols-2">
+        {/* RECENT VENDORS */}
+        <Card>
+          <div className="flex items-center justify-between border-b p-5">
+            <h2 className="font-serif text-2xl">
+              Recent vendors
+            </h2>
+
+            <Link
+              href="/admin/vendors"
+              className="text-sm text-[#8a6a2f]"
+            >
+              View all
+            </Link>
+          </div>
+
+          <div className="divide-y">
+            {(data?.recent?.vendors || []).map(
+              (v: any) => (
+                <div
+                  key={v._id}
+                  className="flex items-center justify-between p-5"
+                >
+                  <div>
+                    <p className="font-medium">
+                      {v.name}
+                    </p>
+
+                    <p className="text-sm text-black/45">
+                      {v.category} · {v.city}
+                    </p>
+                  </div>
+
+                  <span className="rounded-full bg-black/5 px-3 py-1 text-xs">
+                    {v.status}
+                  </span>
+                </div>
+              ),
+            )}
+
+            {data &&
+              !data.recent.vendors.length && (
+                <p className="p-5 text-sm text-black/45">
+                  No vendors yet.
+                </p>
+              )}
+          </div>
+        </Card>
+
+        {/* RECENT ENQUIRIES */}
+        <Card>
+          <div className="flex items-center justify-between border-b p-5">
+            <h2 className="font-serif text-2xl">
+              Recent enquiries
+            </h2>
+
+            <Link
+              href="/admin/enquiries"
+              className="text-sm text-[#8a6a2f]"
+            >
+              View all
+            </Link>
+          </div>
+
+          <div className="divide-y">
+            {(data?.recent?.enquiries || []).map(
+              (e: any) => (
+                <div
+                  key={e._id}
+                  className="flex items-center justify-between p-5"
+                >
+                  <div>
+                    <p className="font-medium">
+                      {e.name}
+                    </p>
+
+                    <p className="text-sm text-black/45">
+                      {e.vendor?.name ||
+                        e.venue?.name ||
+                        "Marketplace enquiry"}
+                    </p>
+                  </div>
+
+                  <span className="rounded-full bg-[#f1e6cf] px-3 py-1 text-xs text-[#8a6a2f]">
+                    {e.status}
+                  </span>
+                </div>
+              ),
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {/* QUICK ACTIONS */}
+      <Card className="mt-6 p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-serif text-2xl">
+              Quick actions
+            </h2>
+
+            <p className="mt-1 text-sm text-black/45">
+              Create marketplace inventory without
+              leaving the dashboard.
+            </p>
+          </div>
+
+          <ArrowUpRight className="text-[#c8a45d]" />
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Link
+            href="/admin/vendors/new"
+            className="rounded-xl bg-[#222] px-4 py-3 text-sm font-medium text-white"
+          >
+            Add vendor
+          </Link>
+
+          <Link
+            href="/admin/venues/new"
+            className="rounded-xl border px-4 py-3 text-sm font-medium"
+          >
+            Add venue
+          </Link>
+        </div>
+      </Card>
+    </AdminShell>
+  );
+}

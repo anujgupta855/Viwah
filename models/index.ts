@@ -1,6 +1,6 @@
 export { Admin } from "./admin";
 export { Enquiry } from "./enquiry";
-export { Review } from "./review";
+export { default as Review } from "./review";
 export { User } from "./user";
 export { Vendor } from "./vendor";
 export { Venue } from "./venue";
