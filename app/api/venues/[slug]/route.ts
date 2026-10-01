@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { connectDB } from "@/lib/db";
 import { Review, Venue } from "@/models";
+import { syncReviewStats } from "@/lib/review-stats";
 
 export const dynamic = "force-dynamic";
 
@@ -25,10 +26,20 @@ export async function GET(
 
     if (!venueDoc) {
       return NextResponse.json(
-        { message: "Venue not found.", slug },
+        {
+          message: "Venue not found.",
+          slug,
+        },
         { status: 404 },
       );
     }
+
+    // Keep Venue.rating and Venue.reviewCount
+    // synchronized with all approved reviews.
+    const stats = await syncReviewStats(
+      "venue",
+      venueDoc._id.toString(),
+    );
 
     const reviews = await Review.find({
       venue: venueDoc._id,
@@ -41,11 +52,18 @@ export async function GET(
     console.log("REVIEWS FOUND:", reviews.length);
 
     return NextResponse.json({
-      venue: venueDoc.toObject(),
+      venue: {
+        ...venueDoc.toObject(),
+        rating: stats.rating,
+        reviewCount: stats.reviewCount,
+      },
       reviews,
     });
   } catch (error) {
-    console.error("GET /api/venues/[slug] ERROR:", error);
+    console.error(
+      "GET /api/venues/[slug] ERROR:",
+      error,
+    );
 
     return NextResponse.json(
       {

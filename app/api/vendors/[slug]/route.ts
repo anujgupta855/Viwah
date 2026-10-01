@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { connectDB } from "@/lib/db";
-
 import { Review, Vendor } from "@/models";
+import { syncReviewStats } from "@/lib/review-stats";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ export async function GET(
     const { slug } = await params;
 
     const vendorDoc = await Vendor.findOne({
-      slug,
+      slug: slug.trim().toLowerCase(),
       status: "active",
     });
 
@@ -27,6 +27,15 @@ export async function GET(
       );
     }
 
+    // Keep Vendor.rating and Vendor.reviewCount
+    // synchronized with all approved reviews.
+    const stats = await syncReviewStats(
+      "vendor",
+      vendorDoc._id.toString(),
+    );
+
+    // Show latest 20 reviews on the page.
+    // Rating/count are calculated from ALL approved reviews.
     const reviews = await Review.find({
       vendor: vendorDoc._id,
       status: "approved",
@@ -38,7 +47,11 @@ export async function GET(
     const vendor = vendorDoc.toObject();
 
     return NextResponse.json({
-      vendor,
+      vendor: {
+        ...vendor,
+        rating: stats.rating,
+        reviewCount: stats.reviewCount,
+      },
       reviews,
     });
   } catch (error) {

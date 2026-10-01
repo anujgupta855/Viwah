@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import Review from "@/models/review";
+import { syncReviewStats } from "@/lib/review-stats";
 
 const reviewSchema = z.object({
   userName: z.string().trim().min(2).max(100),
@@ -101,6 +102,13 @@ export async function POST(request: NextRequest) {
       status: "approved",
       date: new Date(),
     });
+    if (vendor) {
+  await syncReviewStats("vendor", vendor);
+   }
+
+if (venue) {
+  await syncReviewStats("venue", venue);
+}
 
     const populatedReview = await Review.findById(review._id)
       .populate("vendor", "name slug")
