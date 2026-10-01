@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 const links = [
   ["Home", "/"],
@@ -28,8 +29,20 @@ export function SiteNavbar() {
   return (
     <header className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${scrolled ? "bg-white/90 shadow-sm backdrop-blur-xl" : "bg-black/10 backdrop-blur-md"}`}>
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8">
-        <Link href="/" className={`font-display text-2xl font-semibold tracking-[0.18em] ${scrolled ? "text-charcoal" : "text-white"}`}>VIWAH</Link>
-        <nav className="hidden items-center gap-7 lg:flex">
+<Link
+  href="/"
+  className={`font-display text-2xl font-semibold tracking-[0.18em] ${
+    scrolled ? "text-charcoal" : "text-white"
+  }`}
+>
+  <Image
+    src="/images/viwah-logo.png"
+    alt="VIWAH"
+    width={140}
+    height={45}
+    className="object-contain"
+  />
+</Link>        <nav className="hidden items-center gap-7 lg:flex">
           {links.map(([label, href]) => (
             <Link key={href} href={href} className={`text-sm font-medium transition hover:text-gold ${scrolled ? "text-charcoal/80" : "text-white/90"}`}>{label}</Link>
           ))}

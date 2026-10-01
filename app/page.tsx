@@ -24,8 +24,14 @@ export default async function HomePage() {
   return (
     <div>
       <section className="relative flex min-h-[780px] items-end overflow-hidden bg-charcoal pt-24">
-        <Image src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=2200&q=85" alt="Elegant wedding celebration" fill priority className="object-cover" sizes="100vw" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/35 to-black/15" />
+<Image
+  src="/images/hero_wedding.png"
+  alt="Elegant wedding celebration"
+  fill
+  priority
+  className="object-cover"
+  sizes="100vw"
+/>        <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/35 to-black/15" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-black/10" />
         <div className="relative z-10 mx-auto w-full max-w-7xl px-5 pb-20 sm:px-8 md:pb-28">
           <div className="max-w-3xl text-white">
@@ -39,7 +45,7 @@ export default async function HomePage() {
 
       <section className="bg-ivory px-5 py-20 sm:px-8 md:py-28">
         <div className="mx-auto max-w-7xl">
-          <div className="mx-auto max-w-2xl text-center"><p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold">Everything in one place</p><h2 className="mt-4 font-display text-4xl sm:text-5xl">Plan every detail with Viwah.</h2><p className="mt-5 text-charcoal/60">From the first venue visit to the final dance, discover the specialists who bring your celebration together.</p></div>
+          <div className="mx-auto max-w-2xl text-center"><p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold">Events Needs Perfection</p><h2 className="mt-4 font-display text-4xl sm:text-5xl">Plan every detail with Viwah.</h2><p className="mt-5 text-charcoal/60">From the first venue visit to the final dance, discover the specialists who bring your celebration together.</p></div>
           <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">{categories.map(({ label, icon: Icon, href }) => <Link key={label} href={href} className="group rounded-3xl border border-charcoal/10 bg-white p-5 text-center shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-luxury"><div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-ivory text-gold transition group-hover:bg-gold group-hover:text-white"><Icon size={20} /></div><div className="mt-4 text-sm font-medium">{label}</div></Link>)}</div>
         </div>
       </section>
