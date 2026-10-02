@@ -6,7 +6,7 @@ const team = [
   {
   name: "Abhishek Verma",
   role: "Venue Operations & Vendor Management",
-  image: "/team/abhishek-verma.png",
+  image: "/team/abhishek-verma.jpeg",
   position: "center 25%",
   bio: "Abhishek Verma brings 10+ years of frontline hospitality expertise, specializing in high-impact venue operations and vendor management. A master of partner relations and on-ground coordination, he excels at aligning venues and top-tier vendors to deliver flawless events and exceptional guest satisfaction.",
 },
