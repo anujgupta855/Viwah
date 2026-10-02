@@ -805,11 +805,41 @@ export default async function WeddingVenuesLocationPage({
 
     {
 
+      question: `How do I choose a wedding venue in ${pageName}?`,
+
+      answer:
+
+        `Start with your guest count, preferred venue type, wedding dates, location and budget. Then compare capacity, starting price, venue features, photos and other listing details before shortlisting venues.`,
+
+    },
+
+    {
+
       question: `Can I compare wedding venue prices in ${pageName}?`,
 
       answer:
 
         "Yes. Viwah listings can include starting prices, allowing couples to compare available venues before creating a shortlist.",
+
+    },
+
+    {
+
+      question: `Which areas in ${config.city} have wedding venues?`,
+
+      answer:
+
+        `Viwah has dedicated venue pages for multiple areas and localities across ${config.city}. Use the locality links on this page to explore wedding venues in different parts of the city.`,
+
+    },
+
+    {
+
+      question: `What should I check before booking a wedding venue in ${pageName}?`,
+
+      answer:
+
+        "Check the venue's guest capacity, starting price, location, venue type, available amenities, photos and the details provided in the listing. Couples should also confirm date availability and final package terms directly with the venue before booking.",
 
     },
 
@@ -1193,21 +1223,11 @@ export default async function WeddingVenuesLocationPage({
 
               Choosing a wedding venue is one of the most important decisions
 
-              when planning a celebration. Location, guest capacity, venue
+              when planning a celebration. Start with your expected guest count,
 
-              style and budget can all influence the final choice.
+              wedding format, preferred area and budget, then compare venues
 
-            </p>
-
-
-
-            <p>
-
-              When comparing wedding venues in {pageName}, consider the number
-
-              of guests you expect, the type of celebration you are planning,
-
-              available amenities and the venue&apos;s starting price.
+              that can comfortably accommodate your plans.
 
             </p>
 
@@ -1215,11 +1235,45 @@ export default async function WeddingVenuesLocationPage({
 
             <p>
 
-              Viwah brings venue information together in one marketplace so
+              When comparing wedding venues in {pageName}, look beyond the
 
-              couples can discover wedding spaces and create a shortlist based
+              headline price. Check the venue type, guest capacity, location,
 
-              on their requirements.
+              available amenities, photos and the starting price shown in the
+
+              listing. For a final decision, confirm the wedding date, package
+
+              inclusions and terms directly with the venue.
+
+            </p>
+
+
+
+            <p>
+
+              Lucknow offers different kinds of wedding spaces, from banquet
+
+              halls and wedding lawns to hotels, resorts, farmhouses and palaces.
+
+              Couples can also explore nearby localities through the dedicated
+
+              Viwah venue pages linked below, making it easier to compare options
+
+              across the city.
+
+            </p>
+
+
+
+            <p>
+
+              For couples searching for premium wedding venues, Viwah provides
+
+              venue listings with key details in one place so they can discover
+
+              suitable spaces, compare available information and build a
+
+              practical shortlist before making enquiries.
 
             </p>
 
