@@ -535,11 +535,17 @@ export async function generateMetadata({
 
   return {
 
-    title: config.title,
+    title:
+      location === "lucknow"
+        ? "Best Wedding Venues in Lucknow | Wedding Lawns, Banquet Halls & Resorts | Viwah"
+        : config.title,
 
 
 
-    description: config.description,
+    description:
+      location === "lucknow"
+        ? "Explore the best wedding venues in Lucknow including wedding lawns, banquet halls, resorts, hotels and farmhouses. Compare real venue prices, capacity, ratings and details on Viwah."
+        : config.description,
 
 
 
@@ -613,23 +619,18 @@ export default async function WeddingVenuesLocationPage({
 
 
 
-  const venueDocs = await Venue.find(filter)
-
-    .sort({
-
-      featured: -1,
-
-      rating: -1,
-
-      reviewCount: -1,
-
-      createdAt: -1,
-
-    })
-
-    .limit(24)
-
-    .lean();
+  const [venueDocs, totalVenueCount] = await Promise.all([
+    Venue.find(filter)
+      .sort({
+        featured: -1,
+        rating: -1,
+        reviewCount: -1,
+        createdAt: -1,
+      })
+      .limit(24)
+      .lean(),
+    Venue.countDocuments(filter),
+  ]);
 
 
 
@@ -694,8 +695,23 @@ export default async function WeddingVenuesLocationPage({
 
 
   const venueCount = venues.length;
+  const pricedVenues = venues.filter((venue) => venue.startingPrice > 0);
+  const minimumStartingPrice = pricedVenues.length
+    ? Math.min(...pricedVenues.map((venue) => venue.startingPrice))
+    : 0;
+  const maximumCapacity = venues.length
+    ? Math.max(...venues.map((venue) => venue.capacity || 0))
+    : 0;
 
+  const venueTypeCounts = venues.reduce<Record<string, number>>(
+    (counts, venue) => {
+      counts[venue.venueType] = (counts[venue.venueType] || 0) + 1;
+      return counts;
+    },
+    {},
+  );
 
+  const isLucknowMain = location === "lucknow";
 
   const pageName = config.locality
 
@@ -1021,9 +1037,11 @@ export default async function WeddingVenuesLocationPage({
 
             <p className="text-sm text-charcoal/50">
 
-              {venueCount}{" "}
+              {totalVenueCount}{" "}
 
-              {venueCount === 1 ? "venue" : "venues"} available
+              {totalVenueCount === 1 ? "venue" : "venues"} available
+
+              {totalVenueCount > venueCount ? ` · Showing ${venueCount}` : ""}
 
             </p>
 
@@ -1090,6 +1108,100 @@ export default async function WeddingVenuesLocationPage({
         </section>
 
 
+
+        <section className="mt-24 border-t border-charcoal/10 pt-16">
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">
+            Venue snapshot
+          </p>
+
+          <h2 className="mt-3 font-display text-3xl text-charcoal sm:text-4xl">
+            Wedding venue options in {pageName}
+          </h2>
+
+          <p className="mt-4 max-w-3xl text-base leading-8 text-charcoal/60 sm:text-lg">
+            Compare current Viwah listings using practical details such as starting price, guest capacity and venue type. The figures below are based on the active listings currently shown on this page.
+          </p>
+
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-2xl border border-charcoal/10 bg-white p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">Active venues</p>
+              <p className="mt-2 font-display text-3xl text-charcoal">{totalVenueCount}</p>
+              <p className="mt-1 text-sm text-charcoal/50">Current listings in {pageName}</p>
+            </div>
+            <div className="rounded-2xl border border-charcoal/10 bg-white p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">Starting prices</p>
+              <p className="mt-2 font-display text-3xl text-charcoal">
+                {minimumStartingPrice > 0 ? `₹${minimumStartingPrice.toLocaleString("en-IN")}` : "Available on request"}
+              </p>
+              <p className="mt-1 text-sm text-charcoal/50">Lowest displayed starting price</p>
+            </div>
+            <div className="rounded-2xl border border-charcoal/10 bg-white p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">Guest capacity</p>
+              <p className="mt-2 font-display text-3xl text-charcoal">{maximumCapacity > 0 ? `${maximumCapacity}+` : "Varies"}</p>
+              <p className="mt-1 text-sm text-charcoal/50">Largest capacity among shown listings</p>
+            </div>
+            <div className="rounded-2xl border border-charcoal/10 bg-white p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">Venue types</p>
+              <p className="mt-2 font-display text-3xl text-charcoal">{Object.keys(venueTypeCounts).length}</p>
+              <p className="mt-1 text-sm text-charcoal/50">Types represented in current listings</p>
+            </div>
+          </div>
+
+          {Object.keys(venueTypeCounts).length > 0 && (
+            <div className="mt-6 flex flex-wrap gap-2">
+              {Object.entries(venueTypeCounts).map(([type, count]) => (
+                <Link
+                  key={type}
+                  href={`/venues?city=${encodeURIComponent(config.city)}&venueType=${encodeURIComponent(type)}`}
+                  className="rounded-full border border-charcoal/10 bg-white px-4 py-2 text-sm text-charcoal transition hover:border-gold hover:text-gold"
+                >
+                  {type} ({count})
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {isLucknowMain && (
+          <section className="mt-24 max-w-5xl border-t border-charcoal/10 pt-16">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gold">Lucknow venue guide</p>
+            <h2 className="mt-3 font-display text-3xl leading-tight text-charcoal sm:text-4xl">
+              How to find the best wedding venues in Lucknow
+            </h2>
+            <div className="mt-7 space-y-5 text-base leading-8 text-charcoal/65 sm:text-lg">
+              <p>
+                If you are searching for the best wedding venues in Lucknow, start by matching the venue to your guest count, wedding format, preferred locality and budget. Viwah brings active venue listings together so couples can compare practical details before making enquiries.
+              </p>
+              <p>
+                Lucknow has wedding spaces across different formats, including banquet halls, wedding lawns, resorts, hotels, farmhouses and palaces. A smaller indoor function may suit a banquet hall, while a large celebration may need a lawn, resort or spacious farmhouse with higher guest capacity.
+              </p>
+              <p>
+                Starting price is useful for shortlisting, but it should be considered alongside capacity, amenities, location, photos, ratings and the final package offered by the venue. Prices and availability can vary by date, event type and package, so confirm the final terms directly before booking.
+              </p>
+            </div>
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                ["Gomti Nagar", "gomti-nagar-lucknow"],
+                ["Golf City", "golf-city-lucknow"],
+                ["Arjunganj", "arjunganj-lucknow"],
+                ["Sultanpur Road", "sultanpur-road-lucknow"],
+                ["Sitapur Road", "sitapur-road-lucknow"],
+                ["Indira Nagar", "indira-nagar-lucknow"],
+              ].map(([name, slug]) => (
+                <Link
+                  key={slug}
+                  href={`/wedding-venues/${slug}`}
+                  className="rounded-2xl border border-charcoal/10 bg-white p-5 transition hover:border-gold hover:shadow-sm"
+                >
+                  <p className="font-medium text-charcoal">Wedding Venues in {name}</p>
+                  <p className="mt-1 text-sm text-charcoal/50">
+                    Explore venues, prices and capacity in {name}, Lucknow
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="mt-24 border-t border-charcoal/10 pt-16">
 

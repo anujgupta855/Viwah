@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   ChevronLeft,
@@ -121,6 +122,51 @@ export default function VenueDetail({
   }
 
   const v = data.venue;
+
+  const localitySlugMap: Record<string, string> = {
+    "gomti nagar": "gomti-nagar-lucknow",
+    "gomti nagar extension": "gomti-nagar-lucknow",
+    "golf city": "golf-city-lucknow",
+    "sushant golf city": "golf-city-lucknow",
+    arjunganj: "arjunganj-lucknow",
+    "arjunganj road": "arjunganj-lucknow",
+    "sultanpur road": "sultanpur-road-lucknow",
+    "sultanpur rd": "sultanpur-road-lucknow",
+    "sitapur road": "sitapur-road-lucknow",
+    "sitapur rd": "sitapur-road-lucknow",
+    "indira nagar": "indira-nagar-lucknow",
+    alambagh: "alambagh-lucknow",
+    hazratganj: "hazratganj-lucknow",
+    rajajipuram: "rajajipuram-lucknow",
+    jankipuram: "jankipuram-lucknow",
+    ashiyana: "ashiyana-lucknow",
+    aliganj: "aliganj-lucknow",
+    charbagh: "charbagh-lucknow",
+    "kanpur road": "kanpur-road-lucknow",
+    "kanpur rd": "kanpur-road-lucknow",
+    "vikas nagar": "vikas-nagar-lucknow",
+    "faizabad road": "faizabad-road-lucknow",
+    "faizabad rd": "faizabad-road-lucknow",
+    "kursi road": "kursi-road-lucknow",
+    "kursi rd": "kursi-road-lucknow",
+    mahanagar: "mahanagar-lucknow",
+    chinhat: "chinhat-lucknow",
+    aminabad: "aminabad-lucknow",
+    "vrindavan colony": "vrindavan-colony-lucknow",
+    "deva road": "deva-road-lucknow",
+    "deva rd": "deva-road-lucknow",
+    "sarojini nagar": "sarojini-nagar-lucknow",
+    mohanlalganj: "mohanlalganj-lucknow",
+    "iim road": "iim-road-lucknow",
+    "iim rd": "iim-road-lucknow",
+    "triveni nagar": "triveni-nagar-lucknow",
+    telibagh: "telibagh-lucknow",
+    chowk: "chowk-lucknow",
+    "nirala nagar": "nirala-nagar-lucknow",
+  };
+
+  const localitySlug =
+    localitySlugMap[String(v.location || "").trim().toLowerCase()];
 
   const images: string[] =
     Array.isArray(v.images) && v.images.length
@@ -432,6 +478,26 @@ export default function VenueDetail({
               <MapPin size={17} />
               {v.location}, {v.city}
             </p>
+
+            {String(v.city || "").trim().toLowerCase() === "lucknow" && (
+              <div className="mt-4 flex flex-wrap gap-2 text-sm">
+                <Link
+                  href="/wedding-venues/lucknow"
+                  className="rounded-full border border-black/10 bg-white px-4 py-2 text-charcoal/70 transition hover:border-[#c8a45d] hover:text-charcoal"
+                >
+                  Wedding Venues in Lucknow
+                </Link>
+
+                {localitySlug && (
+                  <Link
+                    href={`/wedding-venues/${localitySlug}`}
+                    className="rounded-full border border-black/10 bg-white px-4 py-2 text-charcoal/70 transition hover:border-[#c8a45d] hover:text-charcoal"
+                  >
+                    Wedding Venues in {v.location}
+                  </Link>
+                )}
+              </div>
+            )}
 
             <div className="mt-6 flex flex-wrap gap-5 text-sm">
 

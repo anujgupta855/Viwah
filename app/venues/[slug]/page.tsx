@@ -53,7 +53,9 @@ async function getVenueForSeo(
     startingPrice: Number(venue.startingPrice || 0),
     capacity: Number(venue.capacity || 0),
     venueType: String(venue.venueType),
-    amenities: Array.isArray(venue.amenities) ? venue.amenities : [],
+    amenities: Array.isArray(venue.amenities)
+      ? venue.amenities
+      : [],
     rating: Number(venue.rating || 0),
     reviewCount: Number(venue.reviewCount || 0),
   };
@@ -175,18 +177,35 @@ export default async function Page({
         url: canonical,
         description: venue.description,
         image: venue.images,
+
         address: {
           "@type": "PostalAddress",
-          addressLocality: `${venue.location}, ${venue.city}`,
+          addressLocality: venue.location,
+          addressRegion: "Uttar Pradesh",
           addressCountry: "IN",
         },
-        maximumAttendeeCapacity:
-          venue.capacity > 0 ? venue.capacity : undefined,
-        priceRange:
-          venue.startingPrice > 0
-            ? `₹${venue.startingPrice.toLocaleString("en-IN")}+`
-            : undefined,
-        ...(venue.rating > 0 && venue.reviewCount > 0
+
+        ...(venue.capacity > 0
+          ? {
+              maximumAttendeeCapacity: venue.capacity,
+            }
+          : {}),
+
+        ...(venue.startingPrice > 0
+          ? {
+              offers: {
+                "@type": "Offer",
+                price: venue.startingPrice,
+                priceCurrency: "INR",
+                availability:
+                  "https://schema.org/InStock",
+                url: canonical,
+              },
+            }
+          : {}),
+
+        ...(venue.rating > 0 &&
+        venue.reviewCount > 0
           ? {
               aggregateRating: {
                 "@type": "AggregateRating",
@@ -197,13 +216,17 @@ export default async function Page({
               },
             }
           : {}),
+
         ...(venue.amenities.length > 0
           ? {
-              amenityFeature: venue.amenities.map((amenity) => ({
-                "@type": "LocationFeatureSpecification",
-                name: amenity,
-                value: true,
-              })),
+              amenityFeature: venue.amenities.map(
+                (amenity) => ({
+                  "@type":
+                    "LocationFeatureSpecification",
+                  name: amenity,
+                  value: true,
+                }),
+              ),
             }
           : {}),
       }
@@ -226,7 +249,9 @@ export default async function Page({
         }}
       />
 
-      <VenueDetail params={Promise.resolve({ slug })} />
+      <VenueDetail
+        params={Promise.resolve({ slug })}
+      />
     </>
   );
 }
