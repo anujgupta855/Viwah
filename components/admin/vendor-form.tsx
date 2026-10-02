@@ -31,6 +31,11 @@ type PackageItem = {
   description: string;
 };
 
+type YoutubeVideo = {
+  title: string;
+  url: string;
+};
+
 export default function VendorForm({
   initial,
   id,
@@ -47,6 +52,11 @@ export default function VendorForm({
     description: initial?.description || "",
     profileImage: initial?.profileImage || "",
     portfolioImages: initial?.portfolioImages || [],
+
+    youtubeVideos: Array.isArray(initial?.youtubeVideos)
+      ? initial.youtubeVideos
+      : ([] as YoutubeVideo[]),
+
     startingPrice: initial?.startingPrice ?? 50000,
     pricingUnit: initial?.pricingUnit || "package",
     phone: initial?.phone || "+91 9800000000",
@@ -72,7 +82,9 @@ export default function VendorForm({
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const [uploadingProfile, setUploadingProfile] = useState(false);
+  const [uploadingProfile, setUploadingProfile] =
+    useState(false);
+
   const [uploadingPortfolio, setUploadingPortfolio] =
     useState(false);
 
@@ -124,6 +136,59 @@ export default function VendorForm({
 
     update("packages", packages);
   };
+
+  // -----------------------------
+  // YouTube helpers
+  // -----------------------------
+
+  const addYoutubeVideo = () => {
+    update("youtubeVideos", [
+      ...f.youtubeVideos,
+      {
+        title: "",
+        url: "",
+      },
+    ]);
+  };
+
+  const removeYoutubeVideo = (index: number) => {
+    update(
+      "youtubeVideos",
+      f.youtubeVideos.filter(
+        (_: YoutubeVideo, i: number) => i !== index,
+      ),
+    );
+  };
+
+  const updateYoutubeVideo = (
+    index: number,
+    key: keyof YoutubeVideo,
+    value: string,
+  ) => {
+    const videos = [...f.youtubeVideos];
+
+    videos[index] = {
+      ...videos[index],
+      [key]: value,
+    };
+
+    update("youtubeVideos", videos);
+  };
+
+  function isValidYoutubeUrl(value: string) {
+    try {
+      const parsed = new URL(value.trim());
+
+      return (
+        parsed.hostname === "youtube.com" ||
+        parsed.hostname === "www.youtube.com" ||
+        parsed.hostname === "youtu.be" ||
+        parsed.hostname === "www.youtu.be"
+      );
+    } catch {
+      return false;
+    }
+  }
 
   // -----------------------------
   // Cloudinary image upload
@@ -255,17 +320,43 @@ export default function VendorForm({
         }),
       );
 
-const invalidPackage = packages.some(
-  (pkg) =>
-    !pkg.name ||
-    !pkg.description ||
-    Number.isNaN(Number(pkg.price)) ||
-    Number(pkg.price) < 0,
-);
+      const invalidPackage = packages.some(
+        (pkg) =>
+          !pkg.name ||
+          !pkg.description ||
+          Number.isNaN(Number(pkg.price)) ||
+          Number(pkg.price) < 0,
+      );
 
       if (invalidPackage) {
         throw new Error(
           "Please complete all package details correctly.",
+        );
+      }
+
+      // -----------------------------
+      // YouTube validation
+      // -----------------------------
+
+      const youtubeVideos: YoutubeVideo[] =
+        f.youtubeVideos.map(
+          (video: YoutubeVideo) => ({
+            title: String(video.title).trim(),
+            url: String(video.url).trim(),
+          }),
+        );
+
+      const invalidYoutubeVideo =
+        youtubeVideos.some(
+          (video) =>
+            !video.title ||
+            !video.url ||
+            !isValidYoutubeUrl(video.url),
+        );
+
+      if (invalidYoutubeVideo) {
+        throw new Error(
+          "Please enter a valid YouTube title and URL for every video.",
         );
       }
 
@@ -275,6 +366,7 @@ const invalidPackage = packages.some(
         rating: Number(f.rating),
         reviewCount: Number(f.reviewCount),
         portfolioImages: f.portfolioImages,
+        youtubeVideos,
         packages,
       };
 
@@ -320,6 +412,7 @@ const invalidPackage = packages.some(
       {/* --------------------------------
           Vendor information
       -------------------------------- */}
+
       <Card className="p-6">
         <h2 className="font-serif text-2xl">
           Vendor information
@@ -478,6 +571,7 @@ const invalidPackage = packages.some(
       {/* --------------------------------
           Vendor images
       -------------------------------- */}
+
       <Card className="p-6">
         <h2 className="font-serif text-2xl">
           Vendor images
@@ -571,8 +665,117 @@ const invalidPackage = packages.some(
       </Card>
 
       {/* --------------------------------
+          YouTube videos
+      -------------------------------- */}
+
+      <Card className="p-6">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="font-serif text-2xl">
+              Wedding Events & Highlights
+            </h2>
+
+            <p className="mt-1 text-sm text-black/50">
+              Add YouTube videos showcasing this
+              vendor&apos;s work.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={addYoutubeVideo}
+            className="w-fit rounded-xl border border-[#c8a45d] px-5 py-3 font-medium text-[#8d6c2d] hover:bg-[#c8a45d]/10"
+          >
+            + Add video
+          </button>
+        </div>
+
+        {f.youtubeVideos.length > 0 && (
+          <div className="mt-5 space-y-4">
+            {f.youtubeVideos.map(
+              (
+                video: YoutubeVideo,
+                index: number,
+              ) => (
+                <div
+                  key={index}
+                  className="rounded-2xl border border-black/10 bg-white p-5"
+                >
+                  <div className="mb-5 flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">
+                      Video {index + 1}
+                    </h3>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        removeYoutubeVideo(index)
+                      }
+                      className="rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+                    >
+                      Remove
+                    </button>
+                  </div>
+
+                  <div className="grid gap-5">
+                    <label className="text-sm font-medium">
+                      Video title
+
+                      <input
+                        className={input}
+                        value={video.title}
+                        placeholder="e.g. Wedding Highlights"
+                        onChange={(e) =>
+                          updateYoutubeVideo(
+                            index,
+                            "title",
+                            e.target.value,
+                          )
+                        }
+                      />
+                    </label>
+
+                    <label className="text-sm font-medium">
+                      YouTube URL
+
+                      <input
+                        type="url"
+                        className={input}
+                        value={video.url}
+                        placeholder="https://www.youtube.com/watch?v=..."
+                        onChange={(e) =>
+                          updateYoutubeVideo(
+                            index,
+                            "url",
+                            e.target.value,
+                          )
+                        }
+                      />
+
+                      <p className="mt-2 text-xs text-black/45">
+                        Example:
+                        https://www.youtube.com/watch?v=...
+                        or https://youtu.be/...
+                      </p>
+                    </label>
+                  </div>
+                </div>
+              ),
+            )}
+          </div>
+        )}
+
+        {f.youtubeVideos.length === 0 && (
+          <p className="mt-5 rounded-xl bg-black/[0.03] px-4 py-3 text-sm text-black/45">
+            No YouTube videos added yet.
+          </p>
+        )}
+      </Card>
+
+      {/* --------------------------------
           Packages & marketplace settings
       -------------------------------- */}
+
       <Card className="p-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -581,7 +784,8 @@ const invalidPackage = packages.some(
             </h2>
 
             <p className="mt-1 text-sm text-black/50">
-              Add the packages offered by this vendor.
+              Add the packages offered by this
+              vendor.
             </p>
           </div>
 
@@ -595,6 +799,7 @@ const invalidPackage = packages.some(
         </div>
 
         {/* Package cards */}
+
         <div className="mt-5 space-y-4">
           {f.packages.map(
             (pkg: PackageItem, index: number) => (
@@ -684,6 +889,7 @@ const invalidPackage = packages.some(
         </div>
 
         {/* Marketplace settings */}
+
         <div className="mt-8 border-t border-black/10 pt-6">
           <h3 className="text-lg font-semibold">
             Marketplace settings
@@ -768,6 +974,7 @@ const invalidPackage = packages.some(
       </Card>
 
       {/* Error */}
+
       {error && (
         <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
@@ -775,6 +982,7 @@ const invalidPackage = packages.some(
       )}
 
       {/* Actions */}
+
       <div className="flex justify-end gap-3">
         <button
           type="button"

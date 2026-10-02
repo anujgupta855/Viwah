@@ -23,6 +23,15 @@ const vendorSchema = new Schema(
     description: { type: String, required: true },
     profileImage: { type: String, required: true },
     portfolioImages: { type: [String], default: [] },
+    youtubeVideos: {
+    type: [
+    {
+      title: { type: String, required: true, trim: true },
+      url: { type: String, required: true, trim: true },
+    },
+    ],
+   default: [],
+    },
     startingPrice: { type: Number, required: true, min: 0 },
     pricingUnit: { type: String, enum: ["package", "per_plate"], default: "package" },
     packages: { type: [packageSchema], default: [] },

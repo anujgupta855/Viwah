@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  Play,
 } from "lucide-react";
 import { EnquiryForm } from "@/components/marketplace/enquiry-form";
 
@@ -20,16 +21,64 @@ type PackageItem = {
   description: string;
 };
 
+type YoutubeVideo = {
+  title: string;
+  url: string;
+};
+
+function getYoutubeEmbedUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+
+    if (
+      parsed.hostname === "youtu.be" ||
+      parsed.hostname === "www.youtu.be"
+    ) {
+      const videoId = parsed.pathname
+        .slice(1)
+        .split("/")[0];
+
+      return videoId
+        ? `https://www.youtube.com/embed/${videoId}`
+        : "";
+    }
+
+    const videoId = parsed.searchParams.get("v");
+
+    if (videoId) {
+      return `https://www.youtube.com/embed/${videoId}`;
+    }
+
+    if (parsed.pathname.startsWith("/shorts/")) {
+      const videoId = parsed.pathname
+        .split("/")[2]
+        ?.split("/")[0];
+
+      return videoId
+        ? `https://www.youtube.com/embed/${videoId}`
+        : "";
+    }
+
+    if (parsed.pathname.startsWith("/embed/")) {
+      return `https://www.youtube.com${parsed.pathname}`;
+    }
+
+    return "";
+  } catch {
+    return "";
+  }
+}
+
 export default function VendorDetail({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
- const [data, setData] = useState<any>(null);
-const [error, setError] = useState("");
+  const [data, setData] = useState<any>(null);
+  const [error, setError] = useState("");
 
-const [currentImage, setCurrentImage] = useState(0);
-const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [currentImage, setCurrentImage] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useEffect(() => {
     params
@@ -84,6 +133,11 @@ const [lightboxOpen, setLightboxOpen] = useState(false);
     ? v.packages
     : [];
 
+  const youtubeVideos: YoutubeVideo[] =
+    Array.isArray(v.youtubeVideos)
+      ? v.youtubeVideos
+      : [];
+
   return (
     <main className="bg-ivory pb-24 pt-28">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
@@ -93,106 +147,110 @@ const [lightboxOpen, setLightboxOpen] = useState(false);
         {/* ========================= */}
 
         {galleryImages.length > 0 && (
-  <div className="space-y-4">
-    <div
-      className="group relative h-[320px] cursor-zoom-in overflow-hidden rounded-[2rem] bg-black sm:h-[450px] lg:h-[600px]"
-      onClick={() => setLightboxOpen(true)}
-    >
-      <Image
-        src={galleryImages[currentImage]}
-        alt={`${v.name} portfolio image ${currentImage + 1}`}
-        fill
-        priority
-        className="object-cover transition duration-500 group-hover:scale-[1.02]"
-        sizes="100vw"
-      />
-
-      {galleryImages.length > 1 && (
-        <>
-          <button
-            type="button"
-            aria-label="Previous image"
-            onClick={(e) => {
-              e.stopPropagation();
-              setCurrentImage((current) =>
-                current === 0
-                  ? galleryImages.length - 1
-                  : current - 1
-              );
-            }}
-            className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition hover:bg-black/70"
-          >
-            <ChevronLeft size={24} />
-          </button>
-
-          <button
-            type="button"
-            aria-label="Next image"
-            onClick={(e) => {
-              e.stopPropagation();
-              setCurrentImage((current) =>
-                current === galleryImages.length - 1
-                  ? 0
-                  : current + 1
-              );
-            }}
-            className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition hover:bg-black/70"
-          >
-            <ChevronRight size={24} />
-          </button>
-
-          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-black/55 px-4 py-2 text-xs font-medium text-white backdrop-blur-sm">
-            {currentImage + 1} / {galleryImages.length}
-          </div>
-
-          <div
-            className="absolute bottom-5 right-5 flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-2 backdrop-blur-sm"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {galleryImages.map((_: string, index: number) => (
-              <button
-                key={index}
-                type="button"
-                aria-label={`Go to image ${index + 1}`}
-                onClick={() => setCurrentImage(index)}
-                className={`h-2 rounded-full transition-all ${
-                  index === currentImage
-                    ? "w-6 bg-white"
-                    : "w-2 bg-white/50 hover:bg-white/80"
-                }`}
+          <div className="space-y-4">
+            <div
+              className="group relative h-[320px] cursor-zoom-in overflow-hidden rounded-[2rem] bg-black sm:h-[450px] lg:h-[600px]"
+              onClick={() => setLightboxOpen(true)}
+            >
+              <Image
+                src={galleryImages[currentImage]}
+                alt={`${v.name} portfolio image ${currentImage + 1}`}
+                fill
+                priority
+                className="object-cover transition duration-500 group-hover:scale-[1.02]"
+                sizes="100vw"
               />
-            ))}
-          </div>
-        </>
-      )}
-    </div>
 
-    {galleryImages.length > 1 && (
-      <div className="flex gap-3 overflow-x-auto pb-2">
-        {galleryImages.map((img: string, index: number) => (
-          <button
-            key={`${img}-${index}`}
-            type="button"
-            onClick={() => setCurrentImage(index)}
-            className={`relative h-20 w-28 shrink-0 overflow-hidden rounded-xl border-2 transition sm:h-24 sm:w-32 ${
-              index === currentImage
-                ? "border-[#c8a45d] ring-2 ring-[#c8a45d]/20"
-                : "border-transparent opacity-70 hover:opacity-100"
-            }`}
-          >
-            <Image
-              src={img}
-              alt={`${v.name} thumbnail ${index + 1}`}
-              fill
-              className="object-cover"
-              sizes="128px"
-            />
-          </button>
-        ))}
-      </div>
-    )}
-  </div>
-)}
+              {galleryImages.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Previous image"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentImage((current) =>
+                        current === 0
+                          ? galleryImages.length - 1
+                          : current - 1,
+                      );
+                    }}
+                    className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition hover:bg-black/70"
+                  >
+                    <ChevronLeft size={24} />
+                  </button>
+
+                  <button
+                    type="button"
+                    aria-label="Next image"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentImage((current) =>
+                        current === galleryImages.length - 1
+                          ? 0
+                          : current + 1,
+                      );
+                    }}
+                    className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition hover:bg-black/70"
+                  >
+                    <ChevronRight size={24} />
+                  </button>
+
+                  <div className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-black/55 px-4 py-2 text-xs font-medium text-white backdrop-blur-sm">
+                    {currentImage + 1} / {galleryImages.length}
+                  </div>
+
+                  <div
+                    className="absolute bottom-5 right-5 flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-2 backdrop-blur-sm"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {galleryImages.map(
+                      (_: string, index: number) => (
+                        <button
+                          key={index}
+                          type="button"
+                          aria-label={`Go to image ${index + 1}`}
+                          onClick={() => setCurrentImage(index)}
+                          className={`h-2 rounded-full transition-all ${
+                            index === currentImage
+                              ? "w-6 bg-white"
+                              : "w-2 bg-white/50 hover:bg-white/80"
+                          }`}
+                        />
+                      ),
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {galleryImages.length > 1 && (
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                {galleryImages.map(
+                  (img: string, index: number) => (
+                    <button
+                      key={`${img}-${index}`}
+                      type="button"
+                      onClick={() => setCurrentImage(index)}
+                      className={`relative h-20 w-28 shrink-0 overflow-hidden rounded-xl border-2 transition sm:h-24 sm:w-32 ${
+                        index === currentImage
+                          ? "border-[#c8a45d] ring-2 ring-[#c8a45d]/20"
+                          : "border-transparent opacity-70 hover:opacity-100"
+                      }`}
+                    >
+                      <Image
+                        src={img}
+                        alt={`${v.name} thumbnail ${index + 1}`}
+                        fill
+                        className="object-cover"
+                        sizes="128px"
+                      />
+                    </button>
+                  ),
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ========================= */}
         {/* VENDOR DETAILS */}
@@ -233,7 +291,10 @@ const [lightboxOpen, setLightboxOpen] = useState(false);
               </span>
 
               <strong>
-                ₹{Number(v.startingPrice || 0).toLocaleString("en-IN")}
+                ₹
+                {Number(
+                  v.startingPrice || 0,
+                ).toLocaleString("en-IN")}
                 {v.pricingUnit === "per_plate"
                   ? "/plate"
                   : " starting"}
@@ -262,7 +323,10 @@ const [lightboxOpen, setLightboxOpen] = useState(false);
                     href={`tel:${v.phone}`}
                     className="flex items-center gap-3 rounded-2xl bg-white p-4 transition hover:-translate-y-0.5"
                   >
-                    <Phone size={18} className="text-gold" />
+                    <Phone
+                      size={18}
+                      className="text-gold"
+                    />
 
                     <div>
                       <p className="text-xs text-charcoal/45">
@@ -281,7 +345,10 @@ const [lightboxOpen, setLightboxOpen] = useState(false);
                     href={`mailto:${v.email}`}
                     className="flex items-center gap-3 rounded-2xl bg-white p-4 transition hover:-translate-y-0.5"
                   >
-                    <Mail size={18} className="text-gold" />
+                    <Mail
+                      size={18}
+                      className="text-gold"
+                    />
 
                     <div className="min-w-0">
                       <p className="text-xs text-charcoal/45">
@@ -314,7 +381,10 @@ const [lightboxOpen, setLightboxOpen] = useState(false);
 
                 <div className="mt-6 grid gap-4">
                   {packages.map(
-                    (pkg: PackageItem, index: number) => (
+                    (
+                      pkg: PackageItem,
+                      index: number,
+                    ) => (
                       <div
                         key={`${pkg.name}-${index}`}
                         className="rounded-3xl bg-white p-6"
@@ -332,13 +402,92 @@ const [lightboxOpen, setLightboxOpen] = useState(false);
 
                           <strong className="shrink-0 text-lg">
                             ₹
-                            {Number(pkg.price || 0).toLocaleString(
+                            {Number(
+                              pkg.price || 0,
+                            ).toLocaleString(
                               "en-IN",
                             )}
                           </strong>
                         </div>
                       </div>
                     ),
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* ========================= */}
+            {/* YOUTUBE VIDEOS */}
+            {/* ========================= */}
+
+            {youtubeVideos.length > 0 && (
+              <section className="mt-14">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold">
+                  Wedding Events & Highlights
+                </p>
+
+                <h2 className="mt-2 font-display text-3xl">
+                  See this vendor in action
+                </h2>
+
+                <p className="mt-2 max-w-2xl leading-7 text-charcoal/55">
+                  Watch real wedding celebrations,
+                  shoots, events and highlights from
+                  this vendor.
+                </p>
+
+                <div className="mt-7 space-y-8">
+                  {youtubeVideos.map(
+                    (
+                      video: YoutubeVideo,
+                      index: number,
+                    ) => {
+                      const embedUrl =
+                        getYoutubeEmbedUrl(
+                          video.url,
+                        );
+
+                      if (!embedUrl) {
+                        return null;
+                      }
+
+                      return (
+                        <div
+                          key={`${video.url}-${index}`}
+                          className="overflow-hidden rounded-3xl bg-white shadow-sm"
+                        >
+                          <div className="aspect-video bg-black">
+                            <iframe
+                              src={embedUrl}
+                              title={video.title}
+                              className="h-full w-full"
+                              loading="lazy"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                              allowFullScreen
+                            />
+                          </div>
+
+                          <div className="flex items-center gap-3 px-5 py-4">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#c8a45d]/15">
+                              <Play
+                                size={17}
+                                className="fill-[#c8a45d] text-[#c8a45d]"
+                              />
+                            </div>
+
+                            <div>
+                              <h3 className="font-semibold">
+                                {video.title}
+                              </h3>
+
+                              <p className="mt-0.5 text-xs text-charcoal/45">
+                                Wedding highlight
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    },
                   )}
                 </div>
               </section>
@@ -402,74 +551,84 @@ const [lightboxOpen, setLightboxOpen] = useState(false);
 
         </div>
       </div>
-      {lightboxOpen && galleryImages.length > 0 && (
-  <div
-    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4"
-    onClick={() => setLightboxOpen(false)}
-  >
-    <button
-      type="button"
-      aria-label="Close gallery"
-      onClick={() => setLightboxOpen(false)}
-      className="absolute right-5 top-5 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20"
-    >
-      <X size={24} />
-    </button>
 
-    {galleryImages.length > 1 && (
-      <button
-        type="button"
-        aria-label="Previous image"
-        onClick={(e) => {
-          e.stopPropagation();
-          setCurrentImage((current) =>
-            current === 0
-              ? galleryImages.length - 1
-              : current - 1
-          );
-        }}
-        className="absolute left-4 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20 sm:left-8"
-      >
-        <ChevronLeft size={28} />
-      </button>
-    )}
+      {lightboxOpen &&
+        galleryImages.length > 0 && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4"
+            onClick={() =>
+              setLightboxOpen(false)
+            }
+          >
+            <button
+              type="button"
+              aria-label="Close gallery"
+              onClick={() =>
+                setLightboxOpen(false)
+              }
+              className="absolute right-5 top-5 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20"
+            >
+              <X size={24} />
+            </button>
 
-    <div
-      className="relative h-[75vh] w-full max-w-6xl"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <Image
-        src={galleryImages[currentImage]}
-        alt={`${v.name} portfolio ${currentImage + 1}`}
-        fill
-        className="object-contain"
-        sizes="100vw"
-      />
-    </div>
+            {galleryImages.length > 1 && (
+              <button
+                type="button"
+                aria-label="Previous image"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentImage((current) =>
+                    current === 0
+                      ? galleryImages.length - 1
+                      : current - 1,
+                  );
+                }}
+                className="absolute left-4 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20 sm:left-8"
+              >
+                <ChevronLeft size={28} />
+              </button>
+            )}
 
-    {galleryImages.length > 1 && (
-      <button
-        type="button"
-        aria-label="Next image"
-        onClick={(e) => {
-          e.stopPropagation();
-          setCurrentImage((current) =>
-            current === galleryImages.length - 1
-              ? 0
-              : current + 1
-          );
-        }}
-        className="absolute right-4 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20 sm:right-8"
-      >
-        <ChevronRight size={28} />
-      </button>
-    )}
+            <div
+              className="relative h-[75vh] w-full max-w-6xl"
+              onClick={(e) =>
+                e.stopPropagation()
+              }
+            >
+              <Image
+                src={galleryImages[currentImage]}
+                alt={`${v.name} portfolio ${currentImage + 1}`}
+                fill
+                className="object-contain"
+                sizes="100vw"
+              />
+            </div>
 
-    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-4 py-2 text-sm text-white backdrop-blur-sm">
-      {currentImage + 1} / {galleryImages.length}
-    </div>
-  </div>
-)}
+            {galleryImages.length > 1 && (
+              <button
+                type="button"
+                aria-label="Next image"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentImage((current) =>
+                    current ===
+                    galleryImages.length - 1
+                      ? 0
+                      : current + 1,
+                  );
+                }}
+                className="absolute right-4 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20 sm:right-8"
+              >
+                <ChevronRight size={28} />
+              </button>
+            )}
+
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-4 py-2 text-sm text-white backdrop-blur-sm">
+              {currentImage + 1} /{" "}
+              {galleryImages.length}
+            </div>
+          </div>
+        )}
     </main>
   );
 }
